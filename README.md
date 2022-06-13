@@ -1,5 +1,15 @@
 # h3daemon
 
+## Usage
+
+```
+wget https://uk1s3.embassy.ebi.ac.uk/deciphon/minifam.hmm
+mkdir logs
+./h3daemon minifam.hmm --logdir=logs
+```
+
+## Development
+
 ## Run
 
 ```
