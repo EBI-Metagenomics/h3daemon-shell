@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if ! type podman >/dev/null 2>&1; then
+    echo >&2 "podman command not found!"
+    exit 1
+fi
+
 function usage() {
     echo "h3daemon HMMFILE [--logdir=LOGDIR]"
 }
@@ -117,7 +122,8 @@ if [ -n "$LOGDIR" ]; then
     fi
 fi
 
-cmd="podman run -v $HMMFILE:/app/data/"$(basename "$HMMFILE")
+cmd="podman run -it --init"
+cmd="$cmd -v $HMMFILE:/app/data/"$(basename "$HMMFILE")
 
 if [ -n "$LOGDIR" ]; then
     cmd="$cmd -v $LOGDIR:/app/logs"
@@ -126,5 +132,4 @@ fi
 image=quay.io/microbiome-informatics/h3daemon
 cmd="$cmd --rm $image $(basename "$HMMFILE")"
 
-# echo "$cmd"
 $cmd

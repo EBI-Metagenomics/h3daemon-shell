@@ -16,7 +16,9 @@ RUN rm -rf /hmmer
 
 EXPOSE 51371
 COPY supervisord.conf /app/conf/supervisord.conf
-COPY entrypoint /app/bin/
+COPY entrypoint /app/bin/entrypoint
+RUN chown root:root /app/conf/supervisord.conf
+RUN chown root:root /app/bin/entrypoint
 WORKDIR /app
 
 ENTRYPOINT ["/app/bin/entrypoint"]

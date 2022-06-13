@@ -1,17 +1,32 @@
 #!/bin/bash
 
+# hide ^C
+stty -echoctl
+
 if [ "$#" != "1" ]; then
     echo "You need to provide a single argument."
     exit 1
 fi
 
-HMM_FILE="/app/data/$1"
-if ! test -f "$HMM_FILE"; then
-    echo "$HMM_FILE does not exist."
+HMMFILE="/app/data/$1"
+if ! test -f "$HMMFILE"; then
+    echo "$HMMFILE does not exist."
     exit 1
 fi
 
-/app/bin/hmmpress "$HMM_FILE"
+echo -n "Pressing $HMMFILE... "
+/app/bin/hmmpress "$HMMFILE" >/dev/null || exit 1
+echo "done."
 
-export HMM_FILE
-/usr/bin/supervisord -c /app/conf/supervisord.conf
+# turn on bash's job control
+set -m
+
+export HMMFILE
+/usr/bin/supervisord -c /app/conf/supervisord.conf --pidfile /var/run/supervisor.pid -n &
+
+sleep 2
+
+/usr/bin/supervisorctl start h3master
+/usr/bin/supervisorctl start h3worker
+
+fg %1
