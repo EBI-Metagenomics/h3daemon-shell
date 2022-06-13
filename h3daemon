@@ -132,7 +132,7 @@ if [ -n "$LOGDIR" ]; then
     fi
 fi
 
-cmd="podman run -it --init"
+cmd="podman run -it --init -p 51371:51371"
 cmd="$cmd -v $HMMFILE:/app/data/"$(basename "$HMMFILE")
 
 if [ -n "$LOGDIR" ]; then
