@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# hide ^C
-stty -echoctl
-
 if [ "$#" != "1" ]; then
     echo "You need to provide a single argument."
     exit 1
