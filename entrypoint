@@ -12,4 +12,6 @@ if ! test -f "$HMM_FILE"; then
 fi
 
 /app/bin/hmmpress "$HMM_FILE"
-/app/bin/hmmpgmd --master --hmmdb "$HMM_FILE"
+
+export HMM_FILE
+/usr/bin/supervisord -c /app/conf/supervisord.conf

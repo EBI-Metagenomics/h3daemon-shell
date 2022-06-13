@@ -12,11 +12,15 @@ RUN cd /hmmer && autoconf && ./configure && make && make dev
 
 RUN mkdir -p /app/bin
 RUN mkdir -p /app/data
+RUN mkdir -p /app/logs
 RUN mv /hmmer/src/hmmpgmd /app/bin/ && mv /hmmer/src/hmmpress /app/bin/
 
 EXPOSE 51371
 
-COPY master.sh /app/bin/
+RUN apt-get install supervisor --yes
+COPY supervisord.conf /app/conf/supervisord.conf
+
+COPY entrypoint /app/bin/
 WORKDIR /app
 
-ENTRYPOINT ["/app/bin/master.sh"]
+ENTRYPOINT ["/app/bin/entrypoint"]
