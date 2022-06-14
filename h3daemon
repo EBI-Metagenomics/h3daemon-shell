@@ -189,7 +189,7 @@ if [ -n "$LOGDIR" ]; then
     fi
 fi
 
-cmd="podman run -p 51371:51371"
+cmd="podman run -dt -p 51371:51371"
 cmd="$cmd -v $HMMFILE:/app/data/"$(basename "$HMMFILE")
 
 if [ -n "$LOGDIR" ]; then
@@ -197,6 +197,13 @@ if [ -n "$LOGDIR" ]; then
 fi
 
 image=quay.io/microbiome-informatics/h3daemon
+cmd="$cmd --name h3daemon"
 cmd="$cmd --rm $image $(basename "$HMMFILE")"
 
 $cmd
+
+# TODO: Implement health check instead
+until [ "$(podman inspect -f "{{.State.Running}}" h3daemon)" == "true" ]; do
+    sleep 0.1
+done
+sleep 5

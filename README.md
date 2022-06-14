@@ -28,5 +28,5 @@ podman build -t localhost/h3daemon .
 ```
 wget https://uk1s3.embassy.ebi.ac.uk/deciphon/minifam.hmm
 mkdir logs
-podman run -p 51371:51371 -v "$PWD/minifam.hmm":/app/data/minifam.hmm -v "$PWD/logs:/app/logs" --rm localhost/h3daemon minifam.hmm
+podman run -dt -p 51371:51371 -v "$PWD/minifam.hmm":/app/data/minifam.hmm -v "$PWD/logs:/app/logs" --rm localhost/h3daemon minifam.hmm
 ```
