@@ -12,18 +12,34 @@ if ! test -f "$HMMFILE"; then
 fi
 
 echo -n "Pressing $HMMFILE... "
-/app/bin/hmmpress "$HMMFILE" >/dev/null || exit 1
+/app/bin/hmmpress "$HMMFILE" >/app/logs/h3press.log 2>&1 || exit 1
 echo "done."
 
-# turn on bash's job control
-set -m
+h3master_pid=0
+h3worker_pid=0
 
-export HMMFILE
-/usr/bin/supervisord -c /app/conf/supervisord.conf --pidfile /var/run/supervisor.pid -n &
+term_handler() {
+    if [ "$h3worker_pid" -ne 0 ]; then
+        kill -SIGTERM "$h3worker_pid"
+        wait "$h3worker_pid"
+    fi
+    if [ "$h3master_pid" -ne 0 ]; then
+        kill -SIGTERM "$h3master_pid"
+        wait "$h3master_pid"
+    fi
+    exit 143 # 128 + 15 -- SIGTERM
+}
+trap 'kill ${!}; term_handler' SIGTERM
 
-sleep 2
+/app/bin/hmmpgmd --master --hmmdb "$HMMFILE" >/app/logs/h3master.log 2>&1 &
+h3master_pid="$!"
 
-/usr/bin/supervisorctl start h3master
-/usr/bin/supervisorctl start h3worker
+/app/bin/hmmpgmd --worker 127.0.0.1 >/app/logs/h3worker.log 2>&1 &
+h3worker_pid="$!"
 
-fg %1
+# wait forever
+while true; do
+    # tail -f /dev/null &
+    tail -f /app/logs/h3master.log &
+    wait ${!}
+done

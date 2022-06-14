@@ -2,7 +2,7 @@ FROM docker.io/library/ubuntu:22.04
 
 MAINTAINER danilo.horta@pm.me
 
-RUN apt-get update && apt-get upgrade --yes && apt-get install git build-essential autoconf supervisor --yes
+RUN apt-get update && apt-get upgrade --yes && apt-get install git build-essential autoconf --yes
 
 RUN mkdir -p /app/bin
 RUN mkdir -p /app/data
@@ -15,9 +15,7 @@ RUN mv /hmmer/src/hmmpgmd /app/bin/ && mv /hmmer/src/hmmpress /app/bin/
 RUN rm -rf /hmmer
 
 EXPOSE 51371
-COPY supervisord.conf /app/conf/supervisord.conf
 COPY entrypoint /app/bin/entrypoint
-RUN chown root:root /app/conf/supervisord.conf
 RUN chown root:root /app/bin/entrypoint
 WORKDIR /app
 

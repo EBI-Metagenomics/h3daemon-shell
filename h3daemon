@@ -1,28 +1,8 @@
 #!/bin/bash
 
-if ! type podman >/dev/null 2>&1; then
-    echo >&2 "podman command not found!"
-    exit 1
-fi
-
 function usage() {
     echo "h3daemon HMMFILE [--logdir=LOGDIR]"
 }
-
-if [ $# == 0 ]; then
-    usage
-    exit 1
-fi
-
-if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
-    usage
-    exit 0
-fi
-
-if [[ "$1" == -* ]]; then
-    usage
-    exit 1
-fi
 
 # https://github.com/morgant/realpath
 function realpath() {
@@ -93,6 +73,22 @@ function realpath() {
     $success
 }
 
+if [ $# == 0 ]; then
+    usage
+    exit 1
+fi
+
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+    usage
+    exit 0
+fi
+
+if [[ "$1" == -* ]]; then
+    usage
+    exit 1
+fi
+
+YES=false
 HMMFILE=$(realpath "$1")
 shift 1
 
@@ -100,6 +96,10 @@ for i in "$@"; do
     case $i in
         --logdir=*)
             LOGDIR=$(realpath "${i#*=}")
+            shift
+            ;;
+        -y | --yes)
+            YES=true
             shift
             ;;
         -h | --help)
@@ -120,6 +120,63 @@ if [ $# != 0 ]; then
     exit 1
 fi
 
+function is_possibly_interactive() {
+    [[ $- == *i* ]] && return 0
+    shopt -q login_shell && return 0
+    tty -s && return 0
+    return 1
+}
+
+function has_apt_get() {
+    if type apt-get >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function ask_install() {
+    while true; do
+        read -r -p "$1 program not found. Do you wish to install it? " yn
+        case $yn in
+            [Yy]*)
+                return 0
+                break
+                ;;
+            [Nn]*) return 1 ;;
+            *) echo "Please answer yes or no." ;;
+        esac
+    done
+}
+
+if ! type podman >/dev/null 2>&1; then
+    if ! has_apt_get; then
+        echo >&2 "Podman program not found!"
+        exit 1
+    fi
+    if [ "$YES" == "true" ]; then
+        sudo apt-get install podman --yes
+    else
+
+        if is_possibly_interactive; then
+            if ask_install "Podman"; then
+                sudo apt-get install podman --yes
+            else
+                echo "Goodbye!"
+                exit 1
+            fi
+        else
+            echo >&2 "Podman program not found!"
+            exit 1
+        fi
+    fi
+fi
+
+if ! type podman >/dev/null 2>&1; then
+    echo >&2 "Podman program not found!"
+    exit 1
+fi
+
 if [ ! -f "$HMMFILE" ]; then
     echo >&2 "$HMMFILE file not found!"
     exit 1
@@ -132,7 +189,7 @@ if [ -n "$LOGDIR" ]; then
     fi
 fi
 
-cmd="podman run --init -p 51371:51371"
+cmd="podman run -p 51371:51371"
 cmd="$cmd -v $HMMFILE:/app/data/"$(basename "$HMMFILE")
 
 if [ -n "$LOGDIR" ]; then
