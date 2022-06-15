@@ -1,9 +1,5 @@
 #!/bin/bash
 
-function usage() {
-    echo "h3daemon HMMFILE [--logdir=LOGDIR]"
-}
-
 # https://github.com/morgant/realpath
 function realpath() {
     local success=true
@@ -73,50 +69,194 @@ function realpath() {
     $success
 }
 
+function usage_help() {
+    echo "h3daemon start|stop|help"
+    echo "         start           HMMFILE [--logdir=LOGDIR] [--yes]"
+    echo "         status"
+    echo "         stop"
+    echo "         help            [start|stop]"
+}
+
+function usage_help_start() {
+    echo "h3daemon start HMMFILE [--logdir=LOGDIR]"
+}
+
+function usage_help_status() {
+    echo "h3daemon status"
+}
+
+function usage_help_stop() {
+    echo "h3daemon stop"
+}
+
 if [ $# == 0 ]; then
-    usage
+    usage_help
     exit 1
 fi
 
-if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
-    usage
-    exit 0
-fi
+function check_podman() {
+    YES="$1"
+    if ! type podman >/dev/null 2>&1; then
+        SUDO=""
+        if type sudo >/dev/null 2>&1; then
+            SUDO="sudo"
+        fi
 
-if [[ "$1" == -* ]]; then
-    usage
-    exit 1
-fi
-
-YES=false
-HMMFILE=$(realpath "$1")
-shift 1
-
-for i in "$@"; do
-    case $i in
-        --logdir=*)
-            LOGDIR=$(realpath "${i#*=}")
-            shift
-            ;;
-        -y | --yes)
-            YES=true
-            shift
-            ;;
-        -h | --help)
-            usage
-            exit 0
-            ;;
-        -*)
-            usage
+        if ! has_apt_get; then
+            echo >&2 "Podman program not found!"
             exit 1
-            ;;
-        *) ;;
+        fi
+        if [ "$YES" == "true" ]; then
+            $SUDO apt-get install podman --yes
+        else
 
-    esac
-done
+            if is_possibly_interactive; then
+                if ask_install "Podman"; then
+                    $SUDO apt-get install podman --yes
+                else
+                    echo "Goodbye!"
+                    exit 1
+                fi
+            else
+                echo >&2 "Podman program not found!"
+                exit 1
+            fi
+        fi
+    fi
 
-if [ $# != 0 ]; then
-    usage
+    if ! type podman >/dev/null 2>&1; then
+        echo >&2 "Podman program not found!"
+        exit 1
+    fi
+}
+
+function exec_start() {
+    if [ "$#" == "0" ]; then
+        usage_help_start
+        exit 1
+    fi
+    YES=false
+    HMMFILE=$(realpath "$1")
+    shift 1
+
+    for i in "$@"; do
+        case $i in
+            --logdir=*)
+                LOGDIR=$(realpath "${i#*=}")
+                shift
+                ;;
+            -y | --yes)
+                YES=true
+                shift
+                ;;
+            *) ;;
+        esac
+    done
+
+    if [ $# != 0 ]; then
+        usage_help_start
+        exit 1
+    fi
+
+    check_podman $YES
+
+    if [ ! -f "$HMMFILE" ]; then
+        echo >&2 "$HMMFILE file not found!"
+        exit 1
+    fi
+
+    if [ -n "$LOGDIR" ]; then
+        if [ ! -d "$LOGDIR" ]; then
+            echo >&2 "$LOGDIR directory not found!"
+            exit 1
+        fi
+    fi
+
+    cmd="podman run -dt -p 51371:51371"
+    cmd="$cmd -v $HMMFILE:/app/data/"$(basename "$HMMFILE")
+
+    if [ -n "$LOGDIR" ]; then
+        cmd="$cmd -v $LOGDIR:/app/logs"
+    fi
+
+    # image=quay.io/microbiome-informatics/h3daemon
+    image=localhost/h3daemon
+    cmd="$cmd --health-cmd=/app/bin/check-health"
+    cmd="$cmd --health-interval=2s --health-start-period=1s --health-timeout=2s"
+    cmd="$cmd --name h3daemon"
+    cmd="$cmd --rm $image $(basename "$HMMFILE")"
+
+    $cmd >/dev/null
+
+    echo -n "Starting h3daemon..."
+    until [ "$(podman inspect -f "{{.State.Running}}" h3daemon)" == "true" ]; do
+        echo -n .
+        sleep 0.1
+    done
+
+    until [ "$(podman inspect -f "{{.State.Health.Status}}" h3daemon)" == "healthy" ]; do
+        echo -n .
+        sleep 1
+    done
+    echo " done."
+
+    echo "██╗░░██╗██████╗░██████╗░░█████╗░███████╗███╗░░░███╗░█████╗░███╗░░██╗"
+    echo "██║░░██║╚════██╗██╔══██╗██╔══██╗██╔════╝████╗░████║██╔══██╗████╗░██║"
+    echo "███████║░█████╔╝██║░░██║███████║█████╗░░██╔████╔██║██║░░██║██╔██╗██║"
+    echo "██╔══██║░╚═══██╗██║░░██║██╔══██║██╔══╝░░██║╚██╔╝██║██║░░██║██║╚████║"
+    echo "██║░░██║██████╔╝██████╔╝██║░░██║███████╗██║░╚═╝░██║╚█████╔╝██║░╚███║"
+    echo "╚═╝░░╚═╝╚═════╝░╚═════╝░╚═╝░░╚═╝╚══════╝╚═╝░░░░░╚═╝░╚════╝░╚═╝░░╚══╝"
+}
+
+function exec_stop() {
+    if [ $# != 0 ]; then
+        usage_help_stop
+        exit 1
+    fi
+    podman kill --signal="SIGTERM" h3daemon >/dev/null
+}
+
+function exec_status() {
+    if [ $# != 0 ]; then
+        usage_help_stop
+        exit 1
+    fi
+    if podman container exists h3daemon; then
+        podman inspect -f "{{.State.Health.Status}}" h3daemon
+    else
+        echo "not found"
+    fi
+}
+
+if [ "$1" == "help" ]; then
+    shift 1
+    if [ "$#" == 0 ]; then
+        usage_help
+        exit 0
+    elif [ "$#" == 1 ]; then
+        if [ "$1" == "start" ]; then
+            usage_help_start
+            exit 0
+        elif [ "$1" == "stop" ]; then
+            usage_help_stop
+            exit 0
+        fi
+        usage_help
+        exit 1
+    fi
+    usage_help
+    exit 1
+elif [ "$1" == "start" ]; then
+    shift 1
+    exec_start "$@"
+elif [ "$1" == "status" ]; then
+    shift 1
+    exec_status "$@"
+elif [ "$1" == "stop" ]; then
+    shift 1
+    exec_stop "$@"
+else
+    usage_help
     exit 1
 fi
 
@@ -148,62 +288,3 @@ function ask_install() {
         esac
     done
 }
-
-if ! type podman >/dev/null 2>&1; then
-    if ! has_apt_get; then
-        echo >&2 "Podman program not found!"
-        exit 1
-    fi
-    if [ "$YES" == "true" ]; then
-        sudo apt-get install podman --yes
-    else
-
-        if is_possibly_interactive; then
-            if ask_install "Podman"; then
-                sudo apt-get install podman --yes
-            else
-                echo "Goodbye!"
-                exit 1
-            fi
-        else
-            echo >&2 "Podman program not found!"
-            exit 1
-        fi
-    fi
-fi
-
-if ! type podman >/dev/null 2>&1; then
-    echo >&2 "Podman program not found!"
-    exit 1
-fi
-
-if [ ! -f "$HMMFILE" ]; then
-    echo >&2 "$HMMFILE file not found!"
-    exit 1
-fi
-
-if [ -n "$LOGDIR" ]; then
-    if [ ! -d "$LOGDIR" ]; then
-        echo >&2 "$LOGDIR directory not found!"
-        exit 1
-    fi
-fi
-
-cmd="podman run -dt -p 51371:51371"
-cmd="$cmd -v $HMMFILE:/app/data/"$(basename "$HMMFILE")
-
-if [ -n "$LOGDIR" ]; then
-    cmd="$cmd -v $LOGDIR:/app/logs"
-fi
-
-image=quay.io/microbiome-informatics/h3daemon
-cmd="$cmd --name h3daemon"
-cmd="$cmd --rm $image $(basename "$HMMFILE")"
-
-$cmd
-
-# TODO: Implement health check instead
-until [ "$(podman inspect -f "{{.State.Running}}" h3daemon)" == "true" ]; do
-    sleep 0.1
-done
-sleep 5

@@ -39,7 +39,6 @@ h3worker_pid="$!"
 
 # wait forever
 while true; do
-    # tail -f /dev/null &
     tail -f /app/logs/h3master.log &
     wait ${!}
 done

@@ -2,7 +2,7 @@ FROM docker.io/library/ubuntu:22.04
 
 MAINTAINER danilo.horta@pm.me
 
-RUN apt-get update && apt-get upgrade --yes && apt-get install git build-essential autoconf --yes
+RUN apt-get update && apt-get upgrade --yes && apt-get install git build-essential autoconf netcat --yes
 
 RUN mkdir -p /app/bin
 RUN mkdir -p /app/data
@@ -16,7 +16,9 @@ RUN rm -rf /hmmer
 
 EXPOSE 51371
 COPY entrypoint /app/bin/entrypoint
+COPY check-health /app/bin/check-health
 RUN chown root:root /app/bin/entrypoint
+RUN chown root:root /app/bin/check-health
 WORKDIR /app
 
 ENTRYPOINT ["/app/bin/entrypoint"]

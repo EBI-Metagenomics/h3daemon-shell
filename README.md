@@ -5,28 +5,18 @@
 Download example and create directory for logging (optional).
 
 ```
-wget https://uk1s3.embassy.ebi.ac.uk/deciphon/minifam.hmm
+curl -sOL https://uk1s3.embassy.ebi.ac.uk/deciphon/minifam.hmm
 mkdir logs
 ```
 
-Run the application
+Download and run it.
 
 ```
-./h3daemon minifam.hmm --logdir=logs
+curl -sOL https://app.danilohorta.me/h3daemon
+chmod +x h3daemon
+./h3daemon start minifam.hmm --logdir=logs
 ```
 
-## Development
-
-### Build
-
 ```
-podman build -t localhost/h3daemon .
-```
-
-### Run
-
-```
-wget https://uk1s3.embassy.ebi.ac.uk/deciphon/minifam.hmm
-mkdir logs
-podman run -dt -p 51371:51371 -v "$PWD/minifam.hmm":/app/data/minifam.hmm -v "$PWD/logs:/app/logs" --rm localhost/h3daemon minifam.hmm
+bash -c "$(curl -fsSL https://app.danilohorta.me/h3daemon)" -s start minifam.hmm --yes
 ```
