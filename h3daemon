@@ -194,7 +194,7 @@ function exec_start() {
         trials=$((trials + 1))
         if [ "$trials" == "10" ]; then
             echo " failed."
-            podman_kill
+            kill_container
             exit 1
         fi
         sleep 0.1
@@ -206,7 +206,7 @@ function exec_start() {
         trials=$((trials + 1))
         if [ "$trials" == "10" ]; then
             echo " failed."
-            podman_kill
+            kill_container
             exit 1
         fi
         sleep 1.5
@@ -221,10 +221,13 @@ function exec_start() {
     echo "╚═╝░░╚═╝╚═════╝░╚═════╝░╚═╝░░╚═╝╚══════╝╚═╝░░░░░╚═╝░╚════╝░╚═╝░░╚══╝"
 }
 
-function podman_kill() {
-    podman kill --signal="SIGTERM" h3daemon >/dev/null
+function kill_container() {
     if podman container exists h3daemon; then
-        podman stop h3daemon --time 3 >/dev/null
+        podman kill --signal="SIGTERM" h3daemon >/dev/null 2>&1
+    fi
+    sleep 1
+    if podman container exists h3daemon; then
+        podman stop h3daemon --time 3 >/dev/null 2>&1
     fi
 }
 
@@ -233,7 +236,7 @@ function exec_stop() {
         usage_help_stop
         exit 1
     fi
-    podman_kill
+    kill_container
 }
 
 function exec_status() {
