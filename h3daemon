@@ -189,9 +189,10 @@ function exec_start() {
     fi
 
     image=quay.io/microbiome-informatics/h3daemon
-    if [ "$USE_HEALTH_CHECK" == "true" ]; then
-        cmd="$cmd --health-cmd=/app/bin/check-health"
-        cmd="$cmd --health-interval=2s --health-start-period=2s --health-timeout=2s"
+    cmd="$cmd --health-cmd=/app/bin/check-health"
+    cmd="$cmd --health-interval=2s --health-start-period=2s --health-timeout=2s"
+    if [ "$USE_HEALTH_CHECK" == "false" ]; then
+        cmd="$cmd --no-healthcheck"
     fi
     cmd="$cmd --name h3daemon"
     cmd="$cmd --rm $image $(basename "$HMMFILE")"
