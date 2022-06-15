@@ -181,11 +181,11 @@ function exec_start() {
 
     image=quay.io/microbiome-informatics/h3daemon
     cmd="$cmd --health-cmd=/app/bin/check-health"
-    cmd="$cmd --health-interval=2s --health-start-period=1s --health-timeout=2s"
+    cmd="$cmd --health-interval=2s --health-start-period=2s --health-timeout=2s"
     cmd="$cmd --name h3daemon"
     cmd="$cmd --rm $image $(basename "$HMMFILE")"
 
-    $cmd >/dev/null
+    $cmd >/dev/null || exit 1
 
     echo -n "Starting h3daemon..."
     trials=0
@@ -194,6 +194,7 @@ function exec_start() {
         trials=$((trials + 1))
         if [ "$trials" == "10" ]; then
             echo " failed."
+            podman_kill
             exit 1
         fi
         sleep 0.1
@@ -205,6 +206,7 @@ function exec_start() {
         trials=$((trials + 1))
         if [ "$trials" == "10" ]; then
             echo " failed."
+            podman_kill
             exit 1
         fi
         sleep 1
@@ -219,12 +221,16 @@ function exec_start() {
     echo "╚═╝░░╚═╝╚═════╝░╚═════╝░╚═╝░░╚═╝╚══════╝╚═╝░░░░░╚═╝░╚════╝░╚═╝░░╚══╝"
 }
 
+function podman_kill() {
+    podman kill --signal="SIGTERM" h3daemon >/dev/null
+}
+
 function exec_stop() {
     if [ $# != 0 ]; then
         usage_help_stop
         exit 1
     fi
-    podman kill --signal="SIGTERM" h3daemon >/dev/null
+    podman_kill
 }
 
 function exec_status() {
