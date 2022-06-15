@@ -162,7 +162,6 @@ function exec_start() {
         exit 1
     fi
 
-    echo "PONTO 1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     check_podman $YES
 
     if [ ! -f "$HMMFILE" ]; then
@@ -177,7 +176,6 @@ function exec_start() {
         fi
     fi
 
-    echo "PONTO 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     cmd="podman run -dt -p 51371:51371"
     cmd="$cmd -v $HMMFILE:/app/data/"$(basename "$HMMFILE")
 
@@ -192,13 +190,10 @@ function exec_start() {
     cmd="$cmd --rm $image $(basename "$HMMFILE")"
 
     $cmd >/dev/null || exit 1
-    echo "PONTO 3 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
     echo -n "Starting h3daemon..."
     trials=0
-    echo "PONTO 4 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     until [ "$(podman inspect -f "{{.State.Running}}" h3daemon)" == "true" ]; do
-        echo "PONTO 5 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         echo -n .
         trials=$((trials + 1))
         if [ "$trials" == "10" ]; then
@@ -209,28 +204,22 @@ function exec_start() {
         sleep 0.1
     done
 
-    echo "PONTO 6 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     ERRMSG=$(podman inspect -f "{{.State.Health.Status}}" h3daemon 2>&1 >/dev/null)
     if [ -z "$ERRMSG" ]; then
-        echo "PONTO 7 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         until [ "$(podman inspect -f "{{.State.Health.Status}}" h3daemon)" == "healthy" ]; do
             echo -n .
             trials=$((trials + 1))
             trials=$((trials + 1))
-            echo "PONTO 8 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
             if [ "$trials" == "10" ]; then
                 echo " failed."
                 kill_container
                 exit 1
             fi
-            echo "PONTO 9 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
             sleep 1.5
         done
-        echo "PONTO 10 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     else
         sleep 5
     fi
-    echo "PONTO 11 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     echo " done."
 
     echo "██╗░░██╗██████╗░██████╗░░█████╗░███████╗███╗░░░███╗░█████╗░███╗░░██╗"
