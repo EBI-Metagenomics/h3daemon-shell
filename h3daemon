@@ -179,8 +179,7 @@ function exec_start() {
         cmd="$cmd -v $LOGDIR:/app/logs"
     fi
 
-    # image=quay.io/microbiome-informatics/h3daemon
-    image=localhost/h3daemon
+    image=quay.io/microbiome-informatics/h3daemon
     cmd="$cmd --health-cmd=/app/bin/check-health"
     cmd="$cmd --health-interval=2s --health-start-period=1s --health-timeout=2s"
     cmd="$cmd --name h3daemon"
