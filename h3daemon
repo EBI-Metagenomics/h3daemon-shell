@@ -132,18 +132,6 @@ function check_podman() {
         echo >&2 "Podman program not found!"
         exit 1
     fi
-
-    MAJOR=$(podman -v | cut -d' ' -f3- | cut -d'.' -f1)
-    if ((MAJOR < 4)); then
-        $SUDO apt-get update
-        $SUDO apt-get --only-upgrade install podman --yes
-    fi
-
-    MAJOR=$(podman -v | cut -d' ' -f3- | cut -d'.' -f1)
-    if ((MAJOR < 4)); then
-        echo >&2 "Podman installed is too old."
-        exit 1
-    fi
 }
 
 function exec_start() {
