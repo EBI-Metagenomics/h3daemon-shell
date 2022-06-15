@@ -17,6 +17,8 @@ chmod +x h3daemon
 ./h3daemon start minifam.hmm --logdir=logs
 ```
 
+Optionally, one can enter a single-line command
+
 ```
 bash -c "$(curl -fsSL https://app.danilohorta.me/h3daemon)" -s start minifam.hmm --yes
 ```
