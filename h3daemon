@@ -209,7 +209,7 @@ function exec_start() {
             podman_kill
             exit 1
         fi
-        sleep 1
+        sleep 1.5
     done
     echo " done."
 
@@ -223,6 +223,9 @@ function exec_start() {
 
 function podman_kill() {
     podman kill --signal="SIGTERM" h3daemon >/dev/null
+    if podman container exists h3daemon; then
+        podman stop h3daemon --time 3 >/dev/null
+    fi
 }
 
 function exec_stop() {
@@ -239,9 +242,16 @@ function exec_status() {
         exit 1
     fi
     if podman container exists h3daemon; then
-        podman inspect -f "{{.State.Health.Status}}" h3daemon
+        STATUS=$(podman inspect -f "{{.State.Health.Status}}" h3daemon)
+        echo "$STATUS"
+        if [ "$STATUS" == "healthy" ]; then
+            exit 0
+        else
+            exit 1
+        fi
     else
-        echo "not found"
+        echo "no such container exists"
+        exit 1
     fi
 }
 
