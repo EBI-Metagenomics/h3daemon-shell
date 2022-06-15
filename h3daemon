@@ -184,7 +184,7 @@ function exec_start() {
     fi
 
     USE_HEALTH_CHECK=false
-    if systemd -h >/dev/null 2>&1; then
+    if podman run --rm --health-cmd=pwd hello-world >/dev/null 2>&1; then
         USE_HEALTH_CHECK=true
     fi
 
