@@ -183,17 +183,9 @@ function exec_start() {
         cmd="$cmd -v $LOGDIR:/app/logs"
     fi
 
-    USE_HEALTH_CHECK=false
-    if podman run --rm --health-cmd=pwd hello-world >/dev/null 2>&1; then
-        USE_HEALTH_CHECK=true
-    fi
-
     image=quay.io/microbiome-informatics/h3daemon
     cmd="$cmd --health-cmd=/app/bin/check-health"
     cmd="$cmd --health-interval=2s --health-start-period=2s --health-timeout=2s"
-    if [ "$USE_HEALTH_CHECK" == "false" ]; then
-        cmd="$cmd --no-healthcheck"
-    fi
     cmd="$cmd --name h3daemon"
     cmd="$cmd --rm $image $(basename "$HMMFILE")"
 
@@ -212,7 +204,7 @@ function exec_start() {
         sleep 0.1
     done
 
-    if [ "$USE_HEALTH_CHECK" == "true" ]; then
+    if podman inspect -f "{{.State.Health.Status}}" h3daemon >/dev/null 2>&1; then
         until [ "$(podman inspect -f "{{.State.Health.Status}}" h3daemon)" == "healthy" ]; do
             echo -n .
             trials=$((trials + 1))
@@ -224,6 +216,8 @@ function exec_start() {
             fi
             sleep 1.5
         done
+    else
+        sleep 5
     fi
     echo " done."
 
