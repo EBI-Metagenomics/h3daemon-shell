@@ -210,7 +210,8 @@ function exec_start() {
     done
 
     echo "PONTO 6 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    if podman inspect -f "{{.State.Health.Status}}" h3daemon >/dev/null 2>&1; then
+    ERRMSG=$(podman inspect -f "{{.State.Health.Status}}" h3daemon 2>&1 >/dev/null)
+    if [ -z "$ERRMSG" ]; then
         echo "PONTO 7 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         until [ "$(podman inspect -f "{{.State.Health.Status}}" h3daemon)" == "healthy" ]; do
             echo -n .
