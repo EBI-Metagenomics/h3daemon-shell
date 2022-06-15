@@ -20,5 +20,5 @@ chmod +x h3daemon
 Optionally, one can enter a single-line command
 
 ```
-curl -fsSL "https://app.danilohorta.me/h3daemon" | bash -s -- start test/assets/minifam.hmm --yes
+curl -fsSL "https://app.danilohorta.me/h3daemon" | bash -s -- start minifam.hmm --yes
 ```
