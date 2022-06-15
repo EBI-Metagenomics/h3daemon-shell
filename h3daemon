@@ -96,22 +96,26 @@ fi
 
 function check_podman() {
     YES="$1"
+
+    SUDO=""
+    if type sudo >/dev/null 2>&1; then
+        SUDO="sudo"
+    fi
+
     if ! type podman >/dev/null 2>&1; then
-        SUDO=""
-        if type sudo >/dev/null 2>&1; then
-            SUDO="sudo"
-        fi
 
         if ! has_apt_get; then
             echo >&2 "Podman program not found!"
             exit 1
         fi
         if [ "$YES" == "true" ]; then
+            $SUDO apt-get update
             $SUDO apt-get install podman --yes
         else
 
             if is_possibly_interactive; then
                 if ask_install "Podman"; then
+                    $SUDO apt-get update
                     $SUDO apt-get install podman --yes
                 else
                     echo "Goodbye!"
@@ -126,6 +130,18 @@ function check_podman() {
 
     if ! type podman >/dev/null 2>&1; then
         echo >&2 "Podman program not found!"
+        exit 1
+    fi
+
+    MAJOR=$(podman -v | cut -d' ' -f3- | cut -d'.' -f1)
+    if ((MAJOR < 4)); then
+        $SUDO apt-get update
+        $SUDO apt-get --only-upgrade install podman --yes
+    fi
+
+    MAJOR=$(podman -v | cut -d' ' -f3- | cut -d'.' -f1)
+    if ((MAJOR < 4)); then
+        echo >&2 "Podman installed is too old."
         exit 1
     fi
 }
