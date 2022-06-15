@@ -1,16 +1,5 @@
 #!/bin/bash
 
-echo "Ponto 1"
-type podman
-echo $?
-echo "Ponto 2"
-which podman
-echo $?
-echo "Ponto 3"
-command -v podman
-echo $?
-echo "Ponto 4"
-
 # https://github.com/morgant/realpath
 function realpath() {
     local success=true
