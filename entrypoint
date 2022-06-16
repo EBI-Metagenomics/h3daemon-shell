@@ -1,19 +1,24 @@
 #!/bin/bash
 
 if [ "$#" != "1" ]; then
-    echo "You need to provide a single argument."
+    echo >&2 "You need to provide a single argument."
     exit 1
 fi
 
 HMMFILE="/app/data/$1"
 if ! test -f "$HMMFILE"; then
-    echo "$HMMFILE does not exist."
+    echo >&2 "$HMMFILE does not exist."
     exit 1
 fi
 
-echo -n "Pressing $HMMFILE... "
-/app/bin/hmmpress "$HMMFILE" >/app/logs/h3press.log 2>&1 || exit 1
-echo "done."
+echo -n "Pressing $HMMFILE... " | tee /app/logs/h3press.log
+if { /app/bin/hmmpress "$HMMFILE"; } >>/app/logs/h3press.log 2>&1; then
+    echo "done." | tee -a /app/logs/h3press.log
+else
+    echo >&2 "Failed to press file $HMMFILE."
+    echo "failed." | tee -a /app/logs/h3press.log
+    exit 1
+fi
 
 h3master_pid=0
 h3worker_pid=0
