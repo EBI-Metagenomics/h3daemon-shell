@@ -94,6 +94,35 @@ if [ $# == 0 ]; then
     exit 1
 fi
 
+function has_apt_get() {
+    if type apt-get >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function is_possibly_interactive() {
+    [[ $- == *i* ]] && return 0
+    shopt -q login_shell && return 0
+    tty -s && return 0
+    return 1
+}
+
+function ask_install() {
+    while true; do
+        read -r -p "$1 program not found. Do you wish to install it? " yn
+        case $yn in
+            [Yy]*)
+                return 0
+                break
+                ;;
+            [Nn]*) return 1 ;;
+            *) echo "Please answer yes or no." ;;
+        esac
+    done
+}
+
 function check_podman() {
     YES="$1"
 
@@ -185,7 +214,7 @@ function exec_start() {
 
     image=quay.io/microbiome-informatics/h3daemon
     cmd="$cmd --health-cmd=/app/bin/check-health"
-    cmd="$cmd --health-interval=2s --health-start-period=2s --health-timeout=2s"
+    cmd="$cmd --health-interval=10s --health-start-period=5s --health-timeout=2s"
     cmd="$cmd --name h3daemon"
     cmd="$cmd --rm $image $(basename "$HMMFILE")"
 
@@ -321,32 +350,3 @@ else
     usage_help
     exit 1
 fi
-
-function is_possibly_interactive() {
-    [[ $- == *i* ]] && return 0
-    shopt -q login_shell && return 0
-    tty -s && return 0
-    return 1
-}
-
-function has_apt_get() {
-    if type apt-get >/dev/null 2>&1; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-function ask_install() {
-    while true; do
-        read -r -p "$1 program not found. Do you wish to install it? " yn
-        case $yn in
-            [Yy]*)
-                return 0
-                break
-                ;;
-            [Nn]*) return 1 ;;
-            *) echo "Please answer yes or no." ;;
-        esac
-    done
-}
