@@ -214,7 +214,7 @@ function exec_start() {
 
     image=quay.io/microbiome-informatics/h3daemon
     cmd="$cmd --health-cmd=/app/bin/check-health"
-    cmd="$cmd --health-interval=10s --health-start-period=5s --health-timeout=2s"
+    cmd="$cmd --health-interval=10s --health-start-period=3s --health-timeout=2s"
     cmd="$cmd --name h3daemon"
     cmd="$cmd --rm $image $(basename "$HMMFILE")"
 
@@ -252,16 +252,16 @@ function exec_start() {
 
     ERRMSG=$(podman inspect -f "{{.State.Health.Status}}" h3daemon 2>&1 >/dev/null)
     if [ -z "$ERRMSG" ]; then
+        sleep 4
         until [ "$(podman inspect -f "{{.State.Health.Status}}" h3daemon)" == "healthy" ]; do
             echo -n .
-            trials=$((trials + 1))
             trials=$((trials + 1))
             if [ "$trials" == "10" ]; then
                 echo " failed."
                 kill_container
                 exit 1
             fi
-            sleep 1.5
+            sleep 3
         done
     else
         sleep 5
