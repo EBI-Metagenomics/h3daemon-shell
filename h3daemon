@@ -69,6 +69,23 @@ function realpath() {
     $success
 }
 
+function podman_version() {
+    podman -v | cut -d' ' -f3-
+}
+
+function podman_version_major() {
+    podman_version | cut -d'.' -f1
+}
+
+function health_status() {
+    VERSION=$(podman_version_major)
+    if ((VERSION < 4)); then
+        podman inspect -f "{{.State.Healthcheck.Status}}" h3daemon
+    else
+        podman inspect -f "{{.State.Health.Status}}" h3daemon
+    fi
+}
+
 function usage_help() {
     echo "h3daemon start|stop|help"
     echo "         start           HMMFILE [--logdir=LOGDIR] [--yes]"
@@ -250,10 +267,10 @@ function exec_start() {
         sleep 0.1
     done
 
-    ERRMSG=$(podman inspect -f "{{.State.Health.Status}}" h3daemon 2>&1 >/dev/null)
+    ERRMSG=$(health_status 2>&1 >/dev/null)
     if [ -z "$ERRMSG" ]; then
         sleep 4
-        until [ "$(podman inspect -f "{{.State.Health.Status}}" h3daemon)" == "healthy" ]; do
+        until [ "$(health_status)" == "healthy" ]; do
             echo -n .
             trials=$((trials + 1))
             if [ "$trials" == "10" ]; then
@@ -306,7 +323,7 @@ function exec_status() {
         exit 1
     fi
     if podman container exists h3daemon; then
-        STATUS=$(podman inspect -f "{{.State.Health.Status}}" h3daemon)
+        STATUS=$(health_status)
         echo "$STATUS"
         if [ "$STATUS" == "healthy" ]; then
             exit 0
