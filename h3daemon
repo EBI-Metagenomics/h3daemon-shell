@@ -248,7 +248,7 @@ function exec_start() {
     fi
 
     trials=0
-    ERRMSG=$(podman inspect -f "{{.State.Running}}" h3daemon 2>&1 >/dev/null)
+    ERRMSG=$(podman inspect -f "{{.State.Runnings}}" h3daemon 2>&1 >/dev/null | grep "level=error")
     if [ -n "$ERRMSG" ]; then
         echo >&2 "Container just died ($ERRMSG)."
         if podman container exists h3daemon; then
@@ -268,7 +268,7 @@ function exec_start() {
         sleep 0.1
     done
 
-    ERRMSG=$(health_status 2>&1 >/dev/null)
+    ERRMSG=$(health_status 2>&1 >/dev/null | grep "level=error")
     if [ -z "$ERRMSG" ]; then
         sleep 4
         until [ "$(health_status)" == "healthy" ]; do
