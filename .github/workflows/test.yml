@@ -1,0 +1,20 @@
+name: Test
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install 7-Zip
+        run: sudo apt-get install 7zip
+
+      - name: Download minifam.hmm.7z
+        run: curl -O https://uk1s3.embassy.ebi.ac.uk/deciphon/minifam.hmm.7z
+
+      - name: Extract minifam.hmm
+        run: 7z x minifam.hmm.7z
+
+      - name: Run h3daemon
+        run: ./h3daemon start minifam.hmm --yes

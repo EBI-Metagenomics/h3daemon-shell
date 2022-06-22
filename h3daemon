@@ -248,16 +248,17 @@ function exec_start() {
     fi
 
     trials=0
-    ERRMSG=$(podman inspect -f "{{.State.Runnings}}" h3daemon 2>&1 >/dev/null | grep "level=error")
-    if [ -n "$ERRMSG" ]; then
-        echo >&2 "Container just died ($ERRMSG)."
-        if podman container exists h3daemon; then
-            kill_container
-        fi
-        echo " failed."
-        exit 1
-    fi
-    until [ "$(podman inspect -f "{{.State.Running}}" h3daemon)" == "true" ]; do
+    podman inspect -f "{{.State.Runnings}}" -t container h3daemon >/dev/null 2>&1 || exit 1
+    # ERRMSG=$(podman inspect -f "{{.State.Runnings}}" h3daemon 2>&1 >/dev/null | grep "level=error")
+    # if [ -n "$ERRMSG" ]; then
+    #     echo >&2 "Container just died ($ERRMSG)."
+    #     if podman container exists h3daemon; then
+    #         kill_container
+    #     fi
+    #     echo " failed."
+    #     exit 1
+    # fi
+    until [ "$(podman inspect -f "{{.State.Running}}" -t container h3daemon)" == "true" ]; do
         echo -n .
         trials=$((trials + 1))
         if [ "$trials" == "10" ]; then
