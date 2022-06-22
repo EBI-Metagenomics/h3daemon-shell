@@ -22,17 +22,17 @@ jobs:
         run: 7z x minifam.hmm.7z
 
       - name: Damage minifam.hmm
-        if: ${{ matrix.test_when }} == "failing"
+        if: matrix.test_when == 'failing'
         run: sed -i 's/./xxx/2;s/./xxx/157;s/./xxx/106' minifam.hmm
 
       - name: Run h3daemon when ${{ matrix.test_when }}
-        if: ${{ matrix.test_when }} == "working"
+        if: matrix.test_when == 'working'
         run: |
           loginctl enable-linger 1001
           ./h3daemon start minifam.hmm --yes
 
       - name: Run h3daemon when ${{ matrix.test_when }}
-        if: ${{ matrix.test_when }} == "failing"
+        if: matrix.test_when == 'failing'
         run: |
           loginctl enable-linger 1001
           ./h3daemon start minifam.hmm --yes || exit 0
