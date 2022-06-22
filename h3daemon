@@ -235,8 +235,7 @@ function exec_start() {
     cmd="$cmd --name h3daemon"
     cmd="$cmd --rm $image $(basename "$HMMFILE")"
 
-    # $cmd >/dev/null || exit 1
-    $cmd
+    $cmd >/dev/null || exit 1
 
     echo -n "Starting h3daemon..."
     sleep 0.1
