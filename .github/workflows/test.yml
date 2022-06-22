@@ -3,7 +3,13 @@ on: push
 
 jobs:
   test:
+    name: Test when ${{ matrix.test_when }}
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        test_when: [working, failing]
+        build_type: [Release, Debug]
+
     steps:
       - uses: actions/checkout@v2
 
@@ -15,6 +21,10 @@ jobs:
 
       - name: Extract minifam.hmm
         run: 7z x minifam.hmm.7z
+
+      - name: Damage minifam.hmm
+        if: ${{ matrix.test_when }} == "failing"
+        run: sed -i 's/./xxx/237;s/./xxx/157;s/./xxx/106' minifam.hmm
 
       - name: Run h3daemon
         run: |
