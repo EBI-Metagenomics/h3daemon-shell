@@ -17,4 +17,6 @@ jobs:
         run: 7z x minifam.hmm.7z
 
       - name: Run h3daemon
-        run: ./h3daemon start minifam.hmm --yes
+        run: |
+          loginctl enable-linger 1001
+          ./h3daemon start minifam.hmm --yes
