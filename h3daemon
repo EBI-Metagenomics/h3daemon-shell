@@ -222,7 +222,7 @@ function exec_start() {
         fi
     fi
 
-    cmd="podman run -d -p 51371:51371"
+    cmd="podman run -dt -p 51371:51371"
     cmd="$cmd -v $HMMFILE:/app/data/"$(basename "$HMMFILE")
 
     if [ -n "$LOGDIR" ]; then
