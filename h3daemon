@@ -1,5 +1,8 @@
 #!/bin/bash
 
+DEFAULT_CONTAINER=h3daemon
+DEFAULT_PORT=51371
+
 # https://github.com/morgant/realpath
 function realpath() {
     local success=true
@@ -80,17 +83,17 @@ function podman_version_major() {
 function health_status() {
     VERSION=$(podman_version_major)
     if ((VERSION < 4)); then
-        podman inspect -f "{{.State.Healthcheck.Status}}" -t container h3daemon
+        podman inspect -f "{{.State.Healthcheck.Status}}" -t container "$CONTAINER"
     else
-        podman inspect -f "{{.State.Health.Status}}" -t container h3daemon
+        podman inspect -f "{{.State.Health.Status}}" -t container "$CONTAINER"
     fi
 }
 
 function usage_help() {
     echo "h3daemon start|stop|help"
-    echo "         start           HMMFILE [--logdir=LOGDIR] [--yes]"
-    echo "         status"
-    echo "         stop"
+    echo "         start           HMMFILE [--logdir=LOGDIR] [--yes] [--name=CONTAINER] [--port=PORT]"
+    echo "         status          [--name=CONTAINER]"
+    echo "         stop            [--name=CONTAINER]"
     echo "         help            [start|stop]"
 }
 
@@ -187,6 +190,8 @@ function exec_start() {
     fi
     YES=false
     HMMFILE=$(realpath "$1")
+    CONTAINER=$DEFAULT_CONTAINER
+    PORT=$DEFAULT_PORT
     shift 1
 
     for i in "$@"; do
@@ -197,6 +202,14 @@ function exec_start() {
                 ;;
             -y | --yes)
                 YES=true
+                shift
+                ;;
+            --name=*)
+                CONTAINER="${i#*=}"
+                shift
+                ;;
+            --port=*)
+                PORT="${i#*=}"
                 shift
                 ;;
             *) ;;
@@ -222,7 +235,7 @@ function exec_start() {
         fi
     fi
 
-    cmd="podman run -dt -p 51371:51371"
+    cmd="podman run -dt -p $PORT:51371"
     cmd="$cmd -v $HMMFILE:/app/data/"$(basename "$HMMFILE")
 
     if [ -n "$LOGDIR" ]; then
@@ -232,29 +245,29 @@ function exec_start() {
     image=quay.io/microbiome-informatics/h3daemon
     cmd="$cmd --health-cmd=/app/bin/check-health"
     cmd="$cmd --health-interval=10s --health-start-period=3s --health-timeout=2s"
-    cmd="$cmd --name h3daemon"
+    cmd="$cmd --name $CONTAINER"
     cmd="$cmd --rm $image $(basename "$HMMFILE")"
 
     $cmd >/dev/null || exit 1
 
-    echo -n "Starting h3daemon..."
+    echo -n "Starting $CONTAINER..."
     sleep 0.1
-    if ! podman container exists h3daemon >/dev/null 2>&1; then
-        echo >&2 "Container h3daemon does not exist."
-        kill_container
+    if ! podman container exists "$CONTAINER" >/dev/null 2>&1; then
+        echo >&2 "Container $CONTAINER does not exist."
+        kill_container "$CONTAINER"
         echo " failed."
         exit 1
     fi
 
-    podman inspect -f "{{.State.Runnings}}" -t container h3daemon >/dev/null 2>&1 || exit 1
+    podman inspect -f "{{.State.Runnings}}" -t container "$CONTAINER" >/dev/null 2>&1 || exit 1
 
     trials=0
-    until [ "$(podman inspect -f "{{.State.Running}}" -t container h3daemon)" == "true" ]; do
+    until [ "$(podman inspect -f "{{.State.Running}}" -t container "$CONTAINER")" == "true" ]; do
         echo -n .
         trials=$((trials + 1))
         if [ "$trials" == "10" ]; then
             echo " failed."
-            kill_container
+            kill_container "$CONTAINER"
             exit 1
         fi
         sleep 0.1
@@ -266,15 +279,15 @@ function exec_start() {
         trials=$((trials + 1))
         if [ "$trials" == "10" ]; then
             echo " failed."
-            kill_container
+            kill_container "$CONTAINER"
             exit 1
         fi
         sleep 3
     done
 
-    if ! podman container exists h3daemon >/dev/null 2>&1; then
-        echo >&2 "Container h3daemon does not exist."
-        kill_container
+    if ! podman container exists "$CONTAINER" >/dev/null 2>&1; then
+        echo >&2 "Container $CONTAINER does not exist."
+        kill_container "$CONTAINER"
         echo " failed."
         exit 1
     fi
@@ -290,29 +303,54 @@ function exec_start() {
 }
 
 function kill_container() {
-    if podman container exists h3daemon; then
-        podman kill --signal="SIGTERM" h3daemon >/dev/null 2>&1
+    CONTAINER="$1"
+    if podman container exists "$CONTAINER"; then
+        podman kill --signal="SIGTERM" "$CONTAINER" >/dev/null 2>&1
     fi
     sleep 1
-    if podman container exists h3daemon; then
-        podman stop h3daemon --time 3 >/dev/null 2>&1
+    if podman container exists "$CONTAINER"; then
+        podman stop "$CONTAINER" --time 3 >/dev/null 2>&1
     fi
 }
 
 function exec_stop() {
-    if [ $# != 0 ]; then
+    if [ $# -gt 1 ]; then
         usage_help_stop
         exit 1
     fi
-    kill_container
+
+    CONTAINER=$DEFAULT_CONTAINER
+    for i in "$@"; do
+        case $i in
+            --name=*)
+                CONTAINER="${i#*=}"
+                shift
+                ;;
+            *) ;;
+        esac
+    done
+
+    kill_container "$CONTAINER"
 }
 
 function exec_status() {
-    if [ $# != 0 ]; then
+    if [ $# -gt 1 ]; then
         usage_help_stop
         exit 1
     fi
-    if podman container exists h3daemon; then
+
+    CONTAINER=$DEFAULT_CONTAINER
+    for i in "$@"; do
+        case $i in
+            --name=*)
+                CONTAINER="${i#*=}"
+                shift
+                ;;
+            *) ;;
+        esac
+    done
+
+    if podman container exists "$CONTAINER"; then
         STATUS=$(health_status)
         echo "$STATUS"
         if [ "$STATUS" == "healthy" ]; then
