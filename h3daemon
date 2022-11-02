@@ -254,12 +254,12 @@ function exec_start() {
     sleep 0.1
     if ! podman container exists "$CONTAINER" >/dev/null 2>&1; then
         echo >&2 "Container $CONTAINER does not exist."
-        kill_container "$CONTAINER"
         echo " failed."
+        kill_container "$CONTAINER"
         exit 1
     fi
 
-    podman inspect -f "{{.State.Runnings}}" -t container "$CONTAINER" >/dev/null 2>&1 || exit 1
+    podman inspect -f "{{.State.Running}}" -t container "$CONTAINER" >/dev/null 2>&1 || exit 1
 
     trials=0
     until [ "$(podman inspect -f "{{.State.Running}}" -t container "$CONTAINER")" == "true" ]; do
