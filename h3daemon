@@ -235,7 +235,7 @@ function exec_start() {
         fi
     fi
 
-    cmd="podman run -dt -p $PORT:51371"
+    cmd="podman run -dt -p $PORT:51371 --arch=amd64"
     cmd="$cmd -v $HMMFILE:/app/data/"$(basename "$HMMFILE")
 
     if [ -n "$LOGDIR" ]; then
