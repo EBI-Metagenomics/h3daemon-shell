@@ -24,6 +24,7 @@ h3master_pid=0
 h3worker_pid=0
 
 term_handler() {
+    local -r signum=$1
     if [ "$h3worker_pid" -ne 0 ]; then
         kill -SIGTERM "$h3worker_pid"
         wait "$h3worker_pid"
@@ -32,9 +33,10 @@ term_handler() {
         kill -SIGTERM "$h3master_pid"
         wait "$h3master_pid"
     fi
-    exit 143 # 128 + 15 -- SIGTERM
+    exit $((128 + signum))
 }
-trap 'kill ${!}; term_handler' SIGTERM
+trap 'kill ${!}; term_handler 2' SIGINT
+trap 'kill ${!}; term_handler 15' SIGTERM
 
 /app/bin/hmmpgmd --master --hmmdb "$HMMFILE" >/app/logs/h3master.log 2>&1 &
 h3master_pid="$!"
