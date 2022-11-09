@@ -1,5 +1,11 @@
 #!/bin/bash
 
+early_term_handler() {
+    exit 0
+}
+trap 'early_term_handler' SIGINT
+trap 'early_term_handler' SIGTERM
+
 if [ "$#" != "1" ]; then
     echo >&2 "You need to provide a single argument."
     exit 1
@@ -25,18 +31,24 @@ h3worker_pid=0
 
 term_handler() {
     local exit_code=0
+
+    /usr/bin/nc 127.0.0.1 51371 <<EOF
+!shutdown
+//
+EOF
+
     if [ "$h3worker_pid" -ne 0 ]; then
-        kill -SIGTERM "$h3worker_pid"
         if ! wait "$h3worker_pid"; then
             exit_code=1
         fi
     fi
+
     if [ "$h3master_pid" -ne 0 ]; then
-        kill -SIGTERM "$h3master_pid"
         if ! wait "$h3master_pid"; then
             exit_code=1
         fi
     fi
+
     exit $exit_code
 }
 trap 'kill ${!}; term_handler' SIGINT
