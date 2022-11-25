@@ -86,4 +86,6 @@ while [ "$exit_status" -ne "0" ]; do
 
     wait -n -p exit_pid ${h3master_pid} ${h3worker_pid} ${tail_pid}
     exit_status=$?
+
+    echo "exit_status: ${exit_status} exit_pid: ${exit_pid}"
 done
