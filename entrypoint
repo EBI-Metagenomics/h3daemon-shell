@@ -67,8 +67,8 @@ touch /app/logs/h3worker.log
 
 function force_kill() {
     if [ "$1" -ne "0" ]; then
-        kill -9 "$1"
-        wait
+        kill -9 "$1" 2>/dev/null
+        sleep 1
     fi
 }
 
