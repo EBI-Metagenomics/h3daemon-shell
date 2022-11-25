@@ -65,30 +65,35 @@ trap 'kill ${!}; term_handler' SIGTERM
 touch /app/logs/h3master.log
 touch /app/logs/h3worker.log
 
+function force_kill() {
+    if [ "$1" -ne "0" ]; then
+        kill -9 "$1"
+        wait
+    fi
+}
+
 exit_status=1
-exit_pid=0
 while [ "$exit_status" -ne "0" ]; do
 
-    if [ "$exit_pid" -eq "$h3master_pid" ]; then
-        /app/bin/hmmpgmd --master --hmmdb "$HMMFILE" >>/app/logs/h3master.log 2>&1 &
-        h3master_pid="$!"
-        echo "h3master_pid: $h3master_pid"
-    fi
+    force_kill "$h3master_pid"
+    force_kill "$h3worker_pid"
+    force_kill "$tail_pid"
 
-    if [ "$exit_pid" -eq "$h3worker_pid" ]; then
-        /app/bin/hmmpgmd --worker 127.0.0.1 >>/app/logs/h3worker.log 2>&1 &
-        h3worker_pid="$!"
-        echo "h3worker_pid: $h3worker_pid"
-    fi
+    h3master_pid=0
+    h3worker_pid=0
+    tail_pid=0
 
-    if [ "$exit_pid" -eq "$tail_pid" ]; then
-        tail -f /app/logs/h3master.log &
-        tail_pid="$!"
-        echo "tail_pid: $tail_pid"
-    fi
+    /app/bin/hmmpgmd --master --hmmdb "$HMMFILE" >>/app/logs/h3master.log 2>&1 &
+    h3master_pid="$!"
 
-    wait -n -p exit_pid ${h3master_pid} ${h3worker_pid} ${tail_pid}
+    /app/bin/hmmpgmd --worker 127.0.0.1 >>/app/logs/h3worker.log 2>&1 &
+    h3worker_pid="$!"
+
+    tail -f /app/logs/h3master.log &
+    tail_pid="$!"
+
+    wait -n ${h3master_pid} ${h3worker_pid} ${tail_pid}
     exit_status=$?
 
-    echo "exit_status: ${exit_status} exit_pid: ${exit_pid}"
+    echo "exit_status: ${exit_status}"
 done
