@@ -28,6 +28,7 @@ fi
 
 h3master_pid=0
 h3worker_pid=0
+tail_pid=0
 
 term_handler() {
     local exit_code=0
@@ -49,19 +50,40 @@ EOF
         fi
     fi
 
+    if [ "$tail_pid" -ne 0 ]; then
+        kill $tail_pid
+        if ! wait "$tail_pid"; then
+            exit_code=1
+        fi
+    fi
+
     exit $exit_code
 }
 trap 'kill ${!}; term_handler' SIGINT
 trap 'kill ${!}; term_handler' SIGTERM
 
-/app/bin/hmmpgmd --master --hmmdb "$HMMFILE" >/app/logs/h3master.log 2>&1 &
-h3master_pid="$!"
+touch /app/logs/h3master.log
+touch /app/logs/h3worker.log
 
-/app/bin/hmmpgmd --worker 127.0.0.1 >/app/logs/h3worker.log 2>&1 &
-h3worker_pid="$!"
+exit_status=1
+exit_pid=0
+while [ "$exit_status" -ne "0" ]; do
 
-# wait forever
-while true; do
-    tail -f /app/logs/h3master.log &
-    wait ${!}
+    if [ "$exit_pid" -eq "$h3master_pid" ]; then
+        /app/bin/hmmpgmd --master --hmmdb "$HMMFILE" >>/app/logs/h3master.log 2>&1 &
+        h3master_pid="$!"
+    fi
+
+    if [ "$exit_pid" -eq "$h3worker_pid" ]; then
+        /app/bin/hmmpgmd --worker 127.0.0.1 >>/app/logs/h3worker.log 2>&1 &
+        h3worker_pid="$!"
+    fi
+
+    if [ "$exit_pid" -eq "$tail_pid" ]; then
+        tail -f /app/logs/h3master.log &
+        tail_pid="$!"
+    fi
+
+    wait -n -p exit_pid ${h3master_pid} ${h3worker_pid} ${tail_pid}
+    exit_status=$?
 done
