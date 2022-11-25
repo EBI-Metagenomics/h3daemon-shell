@@ -72,16 +72,19 @@ while [ "$exit_status" -ne "0" ]; do
     if [ "$exit_pid" -eq "$h3master_pid" ]; then
         /app/bin/hmmpgmd --master --hmmdb "$HMMFILE" >>/app/logs/h3master.log 2>&1 &
         h3master_pid="$!"
+        echo "h3master_pid: $h3master_pid"
     fi
 
     if [ "$exit_pid" -eq "$h3worker_pid" ]; then
         /app/bin/hmmpgmd --worker 127.0.0.1 >>/app/logs/h3worker.log 2>&1 &
         h3worker_pid="$!"
+        echo "h3worker_pid: $h3worker_pid"
     fi
 
     if [ "$exit_pid" -eq "$tail_pid" ]; then
         tail -f /app/logs/h3master.log &
         tail_pid="$!"
+        echo "tail_pid: $tail_pid"
     fi
 
     wait -n -p exit_pid ${h3master_pid} ${h3worker_pid} ${tail_pid}
