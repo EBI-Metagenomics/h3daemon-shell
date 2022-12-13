@@ -8,7 +8,7 @@ RUN mkdir -p /app/bin
 RUN mkdir -p /app/data
 RUN mkdir -p /app/logs
 
-RUN git clone https://github.com/horta/hmmer.git /hmmer && cd /hmmer && git reset --hard 8d9d611be96bfc7e2c19791cb4261b9b4548c667
+RUN git clone https://github.com/horta/hmmer.git /hmmer && cd /hmmer && git reset --hard 4debe0dd5b49fa5f8cbae20fbf66fdaebf67e836
 RUN git clone https://github.com/horta/easel.git /hmmer/easel && cd /hmmer/easel && git reset --hard fc4a44acc0773125bb16dc13cf529adc99d6ddd6
 RUN cd /hmmer && autoconf && ./configure && make && make dev
 RUN mv /hmmer/src/hmmpgmd /app/bin/ && mv /hmmer/src/hmmpress /app/bin/
